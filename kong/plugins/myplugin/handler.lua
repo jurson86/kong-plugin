@@ -5,10 +5,19 @@
 
 
 -- Grab pluginname from module name
-local plugin_name = ({...})[1]:match("^kong%.plugins%.([^%.]+)")
-
+local plugin_name = "myplugin"  -- ({...})[1]:match("^kong%.plugins%.([^%.]+)")
 -- load the base plugin object and create a subclass
 local plugin = require("kong.plugins.base_plugin"):extend()
+
+-- redis 
+local policies = require "kong.plugins.myplugin.policies"
+
+
+local kong = kong
+local type = type
+
+-- set the plugin priority, which determines plugin execution order
+plugin.PRIORITY = 1000
 
 -- constructor
 function plugin:new()
@@ -61,6 +70,7 @@ end --]]
 function plugin:access(plugin_conf)
   plugin.super.access(self)
 
+  policies["redis"].increment(plugin_conf)
   -- your custom code here
   ngx.req.set_header("Hello-World", "this is on a request")
   
@@ -69,9 +79,11 @@ end --]]
 ---[[ runs in the 'header_filter_by_lua_block'
 function plugin:header_filter(plugin_conf)
   plugin.super.access(self)
+  kong.log.err("plugin_conf.header_key: ",plugin_conf.header_key);
+  kong.log.err("plugin_conf.say_words: ",plugin_conf.say_words);
 
   -- your custom code here, for example;
-  ngx.header["Bye-World"] = "this is on the response"
+  ngx.header[plugin_conf.header_key] = plugin_conf.say_words
 
 end --]]
 
@@ -92,8 +104,6 @@ function plugin:log(plugin_conf)
 end --]]
 
 
--- set the plugin priority, which determines plugin execution order
-plugin.PRIORITY = 1000
 
 -- return our plugin object
 return plugin
