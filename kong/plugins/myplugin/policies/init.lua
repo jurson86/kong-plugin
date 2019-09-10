@@ -71,6 +71,14 @@ return {
 
       end
  
+ 
+      red:init_pipeline()
+      local ok, err = red:commit_pipeline()
+      if not ok then
+        kong.log.err("failed to commit the pipelined requests : ", err)
+        return nil, err
+      end
+
      
       -- kong.log.err("===================== keepalive ================ ")
       local ok, err = red:set_keepalive(10000, 10)
